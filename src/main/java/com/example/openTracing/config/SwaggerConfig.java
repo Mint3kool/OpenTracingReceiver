@@ -30,8 +30,8 @@ public class SwaggerConfig {
 
 	private ApiInfo apiInfo() {
 		return new ApiInfoBuilder()
-				.title("Insight Service API")
-				.description("API documentation for Insight Service")
+				.title("OpenTracing Service API")
+				.description("API for testing opentracing functionality")
 				.version("1.0.0")
 				.build();
 	}

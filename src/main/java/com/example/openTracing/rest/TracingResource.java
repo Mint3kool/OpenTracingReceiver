@@ -4,12 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,47 +23,43 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import javax.jms.Message;
+
 /**
- * The class that generates all of the API endpoints
+ * Note: jmsTemplate is used for completely synchronous jms client calls
  */
 @RestController
 @RequestMapping("/api")
 public class TracingResource {
 
-	@Value(value = "${aws.readFromAws:false}")
-	private boolean readFromAws;
+	@Autowired
+	private ApplicationContext ctx;
 
 	private static final Logger logger = LoggerFactory.getLogger(TracingResource.class);
 
-	@PostMapping(value = "/token/{value}", consumes = "text/plain")
-	public void token(@PathVariable("value") String value) {
-		return;
-	}
-	
-	@RequestMapping(value = "/batch", method = RequestMethod.POST)
-	public Integer request() {
-		return -1;
+	@RequestMapping(value = "/singleConsumer", method = RequestMethod.POST)
+	public String consumeRequest() {
+		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
+		Object o = jms.receiveAndConvert("newmessageclass");
+		return o.toString();
 	}
 
-//	@RequestMapping(value = "/batch", method = RequestMethod.POST)
-//	public Integer batchRequest(@RequestBody CustomerList customers) {
-//		int batch = -1;
-//
-//		try {
-//			batch = service.setBatchNumber(customers);
-//		} catch (IOException e) {
-//			logger.error(String.format("Failed to generate batch number with error: %s"), e.toString());
-//			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "failed to generate batch");
-//		}
-//
-//		if (batch == -1) {
-//			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-//					"Invalid customerId in batch");
-//		} else if (batch == -2) {
-//			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-//					"Batch requests full, process some batches before adding more");
-//		} else  {
-//			return batch;
-//		}
-//	}
+
+	@RequestMapping(value = "/singleProducer/{guid}", method = RequestMethod.POST)
+	public void produceRequest(@PathVariable("guid") String value) {
+		createMessage(value);
+	}
+
+	@RequestMapping(value = "/batch/{quantity}", method = RequestMethod.POST)
+	public void batchRequest(@PathVariable("quantity") String value) {
+		int quantity = Integer.parseInt(value);
+		for (int i = 0; i < quantity; i++) {
+			createMessage(java.util.UUID.randomUUID().toString());
+		}
+	}
+
+	public void createMessage(String message) {
+		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
+		jms.convertAndSend("newmessageclass", message);
+	}
 }
