@@ -37,29 +37,39 @@ public class TracingResource {
 
 	private static final Logger logger = LoggerFactory.getLogger(TracingResource.class);
 
-	@RequestMapping(value = "/singleConsumer", method = RequestMethod.POST)
-	public String consumeRequest() {
+	@RequestMapping(value = "/request/{topic}", method = RequestMethod.GET)
+	public String getRequest(@PathVariable("topic") String topic) {
 		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		Object o = jms.receiveAndConvert("newmessageclass");
+		Object o = jms.receiveAndConvert(topic);
 		return o.toString();
 	}
-
-
-	@RequestMapping(value = "/singleProducer/{guid}", method = RequestMethod.POST)
-	public void produceRequest(@PathVariable("guid") String value) {
-		createMessage(value);
+	
+	@RequestMapping(value = "/batch/{topic}", method = RequestMethod.GET)
+	public void getBatch(@PathVariable("topic") String topic, @RequestParam("quantity") int quantity) {
+		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
+		for (int i = 0; i < quantity; i++) {
+			jms.receiveAndConvert(topic);
+		}
+	}
+	
+	@RequestMapping(value = "/request/{topic}", method = RequestMethod.POST)
+	public void sendRequest(@PathVariable("topic") String topic, @RequestParam("message") String message) {
+		sendCustomMessage(topic, message);
 	}
 
-	@RequestMapping(value = "/batch/{quantity}", method = RequestMethod.POST)
-	public void batchRequest(@PathVariable("quantity") String value) {
-		int quantity = Integer.parseInt(value);
+	@RequestMapping(value = "/batch/{topic}", method = RequestMethod.POST)
+	public void sendBatch(@PathVariable("topic") String topic, @RequestParam("quantity") int quantity) {
 		for (int i = 0; i < quantity; i++) {
-			createMessage(java.util.UUID.randomUUID().toString());
+			sendMessage(topic);
 		}
 	}
 
-	public void createMessage(String message) {
+	public void sendMessage(String topic) {
+		sendCustomMessage(topic, java.util.UUID.randomUUID().toString());
+	}
+	
+	public void sendCustomMessage(String topic, String message) {
 		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		jms.convertAndSend("newmessageclass", message);
+		jms.convertAndSend(topic, message);
 	}
 }
