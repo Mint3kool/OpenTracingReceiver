@@ -68,14 +68,46 @@ public class TracingResource {
 	@RequestMapping(value = "/test", method = RequestMethod.POST)
 	public void startTest(@RequestParam("queue") String queue, @RequestParam("quantity") int quantity) {
 		
-		producer.setQueueName(queue);
+//		producer.setQueueName(queue);
+//		--------------------------------------
+		
+//		Span span = tracer.buildSpan("testMessage").start();
+//
+//        HttpStatus status = HttpStatus.NO_CONTENT;
+//
+//        try {
+//            int id = Integer.parseInt(idString);
+//            log.info("Received Request to delete employee {}", id);
+//            span.log(ImmutableMap.of("event", "delete-request", "value", idString));
+//            if (employeeService.deleteEmployee(id, span)) {
+//                span.log(ImmutableMap.of("event", "delete-success", "value", idString));
+//                span.setTag("http.status_code", 200);
+//                status = HttpStatus.OK;
+//            } else {
+//                span.log(ImmutableMap.of("event", "delete-fail", "value", "does not exist"));
+//                span.setTag("http.status_code", 204);
+//            }
+//        } catch (NumberFormatException | NoSuchElementException nfe) {
+//            span.log(ImmutableMap.of("event", "delete-fail", "value", idString));
+//            span.setTag("http.status_code", 204);
+//        }
+//
+//        span.finish();
+        
+//        -----------------------------
+        
 		consumer.setQueueName(queue);
+		
+		for (int i = 0; i < quantity; i++) {
+			sendMessage(queue);
+		}
 		
 		Thread consumerThread = new Thread(consumer);
         consumerThread.start();
+        
 		
-        Thread producerThread = new Thread(producer);
-        producerThread.start();
+//        Thread producerThread = new Thread(producer);
+//        producerThread.start();
 	}
 
 	public void sendMessage(String queue) {
