@@ -14,6 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,15 +25,23 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import lombok.Data;
+
+import com.example.openTracing.Consumer;
 
 import javax.jms.Message;
 
 /**
  * Note: jmsTemplate is used for completely synchronous jms client calls
  */
+@Service
+@Component
 @RestController
 @RequestMapping("/api")
 public class TracingResource {
+	
+	@Autowired
+	private Consumer consumer;
 
 	@Autowired
 	private ApplicationContext ctx;
@@ -62,6 +73,12 @@ public class TracingResource {
 		for (int i = 0; i < quantity; i++) {
 			sendMessage(topic);
 		}
+	}
+	
+	@RequestMapping(value = "/test", method = RequestMethod.POST)
+	public void startTest(@RequestParam("test") String topic, @RequestParam("quantity") int quantity) {
+		Thread consumerThread = new Thread(consumer);
+		consumerThread.start();
 	}
 
 	public void sendMessage(String topic) {
