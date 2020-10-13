@@ -1,53 +1,53 @@
 package com.example.openTracing;
 
 import javax.jms.Connection;
+import javax.jms.DeliveryMode;
 import javax.jms.Destination;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.springframework.stereotype.Component;
-import lombok.Data;
 
+import lombok.Data;
 
 @Data
 @Component
-public class Consumer implements Runnable {
+public class Producer implements Runnable {
 	
-	private int timeout = 1000; //timeout in ms
 	private String queueName = "defaultQ";
 	
 	public void setQueueName(String s) {
 		queueName = s;
 	}
 
-    @Override
     public void run() {
-        try {
+        try { // Create a connection factory.
             ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
 
-            //Create Connection
+            //Create connection.
             Connection connection = factory.createConnection();
 
             // Start the connection
             connection.start();
 
-            // Create Session
+            // Create a session which is non transactional
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-            //Create queue
+            // Create Destination queue
             Destination queue = session.createQueue(queueName);
 
-            MessageConsumer consumer = session.createConsumer(queue);
+            // Create a producer
+            MessageProducer producer = session.createProducer(queue);
 
-            Message message = consumer.receive(timeout);
+            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
 
-            if (message instanceof TextMessage) {
-                TextMessage textMessage = (TextMessage) message;
-                String text = textMessage.getText();
-                System.out.println("Consumer Received: " + text + " from: " + queueName);
-            }
+            String msg = "Hello World";
+
+            // insert message
+            TextMessage message = session.createTextMessage(msg);
+            System.out.println("Producer Sent: " + msg + "from: " + queueName);
+            producer.send(message);
 
             session.close();
             connection.close();
