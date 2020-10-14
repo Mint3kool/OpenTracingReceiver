@@ -16,6 +16,9 @@ import lombok.Data;
 import com.example.openTracing.Consumer;
 import com.example.openTracing.Producer;
 
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+
 import javax.jms.Message;
 
 /**
@@ -26,15 +29,18 @@ import javax.jms.Message;
 @RestController
 @RequestMapping("/api")
 public class TracingResource {
-	
+
 	@Autowired
 	private Consumer consumer;
-	
+
 	@Autowired
 	private Producer producer;
 
 	@Autowired
 	private ApplicationContext ctx;
+
+	@Autowired
+	private Tracer tracer;
 
 	private static final Logger logger = LoggerFactory.getLogger(TracingResource.class);
 
@@ -44,7 +50,7 @@ public class TracingResource {
 		Object o = jms.receiveAndConvert(queue);
 		return o.toString();
 	}
-	
+
 	@RequestMapping(value = "/batch/{queue}", method = RequestMethod.GET)
 	public void getBatch(@PathVariable("queue") String queue, @RequestParam("quantity") int quantity) {
 		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
@@ -52,7 +58,7 @@ public class TracingResource {
 			jms.receiveAndConvert(queue);
 		}
 	}
-	
+
 	@RequestMapping(value = "/request/{queue}", method = RequestMethod.POST)
 	public void sendRequest(@PathVariable("queue") String queue, @RequestParam("message") String message) {
 		sendCustomMessage(queue, message);
@@ -64,14 +70,25 @@ public class TracingResource {
 			sendMessage(queue);
 		}
 	}
-	
+
+	@RequestMapping(value = "/raw", method = RequestMethod.POST)
+	public void raw() {
+		
+		Span span = tracer.buildSpan("create employee").start();
+		// Set http status code
+		span.setTag("http.status_code", 201);
+
+		// Close the span
+		span.finish();
+	}
+
 	@RequestMapping(value = "/test", method = RequestMethod.POST)
 	public void startTest(@RequestParam("queue") String queue, @RequestParam("quantity") int quantity) {
-		
+
 //		producer.setQueueName(queue);
 //		--------------------------------------
-		
-//		Span span = tracer.buildSpan("testMessage").start();
+
+		Span span = tracer.buildSpan("testMessage").start();
 //
 //        HttpStatus status = HttpStatus.NO_CONTENT;
 //
@@ -93,19 +110,18 @@ public class TracingResource {
 //        }
 //
 //        span.finish();
-        
+
 //        -----------------------------
-        
+
 		consumer.setQueueName(queue);
-		
+
 		for (int i = 0; i < quantity; i++) {
 			sendMessage(queue);
 		}
-		
+
 		Thread consumerThread = new Thread(consumer);
-        consumerThread.start();
-        
-		
+		consumerThread.start();
+
 //        Thread producerThread = new Thread(producer);
 //        producerThread.start();
 	}
@@ -113,7 +129,7 @@ public class TracingResource {
 	public void sendMessage(String queue) {
 		sendCustomMessage(queue, java.util.UUID.randomUUID().toString());
 	}
-	
+
 	public void sendCustomMessage(String queue, String message) {
 		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
 		jms.convertAndSend(queue, message);
