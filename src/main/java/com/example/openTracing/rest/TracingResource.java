@@ -16,8 +16,11 @@ import lombok.Data;
 import com.example.openTracing.Consumer;
 import com.example.openTracing.Producer;
 
+import io.opentracing.Scope;
+import io.opentracing.ScopeManager;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 
 import javax.jms.Message;
 
@@ -39,8 +42,8 @@ public class TracingResource {
 	@Autowired
 	private ApplicationContext ctx;
 
-	@Autowired
-	private Tracer tracer;
+//	@Autowired
+//	private Tracer tracer;
 
 	private static final Logger logger = LoggerFactory.getLogger(TracingResource.class);
 
@@ -73,13 +76,20 @@ public class TracingResource {
 
 	@RequestMapping(value = "/raw", method = RequestMethod.POST)
 	public void raw() {
+		if (GlobalTracer.isRegistered()) {
+			System.out.println("The global tracer is set");
+			System.out.println(GlobalTracer.get().toString());
+		}
 		
-		Span span = tracer.buildSpan("create employee").start();
-		// Set http status code
-		span.setTag("http.status_code", 201);
-
-		// Close the span
-		span.finish();
+		Span s = GlobalTracer.get().buildSpan("yeet").start();
+		
+		try (Scope sc = GlobalTracer.get().scopeManager().activate(s)){
+			s.setTag("tag", "please");
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			s.finish();
+		}
 	}
 
 	@RequestMapping(value = "/test", method = RequestMethod.POST)
@@ -88,7 +98,7 @@ public class TracingResource {
 //		producer.setQueueName(queue);
 //		--------------------------------------
 
-		Span span = tracer.buildSpan("testMessage").start();
+//		Span span = tracer.buildSpan("testMessage").start();
 //
 //        HttpStatus status = HttpStatus.NO_CONTENT;
 //
