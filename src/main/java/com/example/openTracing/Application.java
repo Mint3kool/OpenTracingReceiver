@@ -17,14 +17,7 @@ import io.opentracing.util.GlobalTracer;
 public class Application {
 
 	public static void main(String[] args) throws Exception {
-		
-		if (GlobalTracer.isRegistered()) {
-			System.out.println("already up");
-		} else {
-			System.out.println("nvm");
-		}
-
-		if (!configureGlobalTracer("stupid"))
+		if (!configureGlobalTracer("application_tracer"))
 			throw new Exception("Could not configure the global tracer");
 
 		SpringApplication.run(Application.class, args);
