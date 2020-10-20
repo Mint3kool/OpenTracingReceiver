@@ -62,16 +62,11 @@ public class TracingResource {
 	}
 
 	@RequestMapping(value = "/apiTrace", method = RequestMethod.POST, consumes = "application/json")
-	public void getApiTrace(@RequestHeader Map<String, String> request, @RequestBody MediaType body) {
-//		System.out.println("1");
+	public void getApiTrace(@RequestHeader Map<String, String> request, @RequestBody Object body) {
 		
 		Tracer t = GlobalTracer.get();
-		
-//		System.out.println("2");
 
-		SpanContext parent = t.extract(Builtin.HTTP_HEADERS, new TextMapAdapter(request));
-		
-//		System.out.println("3");
+		SpanContext parent = t.extract(Builtin.HTTP_HEADERS, new HttpHeadersExtract(request));
 		
 		Span newSpan = null;
 		
@@ -81,11 +76,7 @@ public class TracingResource {
             newSpan = t.buildSpan("extend_span").asChildOf(parent).start();
         }
 		
-//		System.out.println("4");
-		
 		newSpan.setTag("more_baggage", "super_bags");
-		
-//		System.out.println("5");
 		
 		newSpan.finish();
 	}
