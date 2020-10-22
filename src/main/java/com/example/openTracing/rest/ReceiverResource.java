@@ -76,18 +76,4 @@ public class ReceiverResource {
 
 		newSpan.finish();
 	}
-
-	public void sendMessage(String queue) {
-		sendCustomMessage(queue, java.util.UUID.randomUUID().toString());
-	}
-
-	public void sendCustomMessage(String queue, String message) {
-		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		jms.convertAndSend(queue, message);
-	}
-
-	public void sendCustomObjectMessage(String queue, Object o) {
-		JmsTemplate jms = ctx.getBean(JmsTemplate.class);
-		jms.convertAndSend(queue, o);
-	}
 }
