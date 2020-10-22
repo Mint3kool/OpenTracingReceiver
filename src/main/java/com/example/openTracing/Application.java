@@ -17,7 +17,7 @@ import io.opentracing.util.GlobalTracer;
 public class Application {
 
 	public static void main(String[] args) throws Exception {
-		if (!configureGlobalTracer("application_tracer"))
+		if (!configureGlobalTracer("reciever_tracer"))
 			throw new Exception("Could not configure the global tracer");
 
 		SpringApplication.run(Application.class, args);

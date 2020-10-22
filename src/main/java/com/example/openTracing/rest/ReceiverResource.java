@@ -21,6 +21,7 @@ import com.example.openTracing.Producer;
 import io.opentracing.Scope;
 import io.opentracing.ScopeManager;
 import io.opentracing.propagation.TextMapAdapter;
+import io.opentracing.tag.Tags;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
@@ -43,12 +44,12 @@ import javax.jms.Message;
 @Component
 @RestController
 @RequestMapping("/api")
-public class TracingResource {
+public class ReceiverResource {
 
 	@Autowired
 	private ApplicationContext ctx;
 
-	private static final Logger logger = LoggerFactory.getLogger(TracingResource.class);
+	private static final Logger logger = LoggerFactory.getLogger(ReceiverResource.class);
 
 	@RequestMapping(value = "/trace", method = RequestMethod.GET)
 	public void getTrace(@RequestParam("queue") String queue) {
@@ -61,23 +62,29 @@ public class TracingResource {
 		s.finish();
 	}
 
-	@RequestMapping(value = "/apiTrace", method = RequestMethod.POST, consumes = "application/json")
-	public void getApiTrace(@RequestHeader Map<String, String> request, @RequestBody Object body) {
-		
+	@RequestMapping(value = "/apiTrace", method = RequestMethod.GET)
+	public void getApiTrace(@RequestHeader Map<String, String> headers) {
+
 		Tracer t = GlobalTracer.get();
 
-		SpanContext parent = t.extract(Builtin.HTTP_HEADERS, new HttpHeadersExtract(request));
-		
+		Tracer.SpanBuilder spanBuilder;
+
+		SpanContext parent = t.extract(Builtin.HTTP_HEADERS, new TextMapAdapter(headers));
+
 		Span newSpan = null;
-		
+
 		if (parent == null) {
-            newSpan = t.buildSpan("new_span").start();
-        } else {
-            newSpan = t.buildSpan("extend_span").asChildOf(parent).start();
-        }
-		
+			spanBuilder = t.buildSpan("new_span");
+		} else {
+			spanBuilder = t.buildSpan("extend_span").asChildOf(parent);
+		}
+
+		newSpan = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER).start();
+
+		t.scopeManager().activate(newSpan);
+
 		newSpan.setTag("more_baggage", "super_bags");
-		
+
 		newSpan.finish();
 	}
 
