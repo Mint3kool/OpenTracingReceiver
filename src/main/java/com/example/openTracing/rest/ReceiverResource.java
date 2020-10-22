@@ -3,12 +3,9 @@ package com.example.openTracing.rest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
-import org.springframework.http.HttpHeaders;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
@@ -16,23 +13,15 @@ import lombok.Data;
 import okhttp3.MediaType;
 
 import com.example.openTracing.Consumer;
-import com.example.openTracing.Producer;
 
-import io.opentracing.Scope;
-import io.opentracing.ScopeManager;
 import io.opentracing.propagation.TextMapAdapter;
 import io.opentracing.tag.Tags;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
-import io.opentracing.propagation.Format;
-import io.opentracing.propagation.TextMapAdapter;
 import io.opentracing.propagation.Format.Builtin;
 import io.opentracing.util.GlobalTracer;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import javax.jms.Message;
