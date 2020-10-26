@@ -15,6 +15,7 @@ import com.example.openTracing.Consumer;
 
 import io.opentracing.propagation.TextMapAdapter;
 import io.opentracing.tag.Tags;
+import io.opentracing.References;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
@@ -85,7 +86,7 @@ public class ReceiverResource {
 
 		newSpan.finish();
 
-		followChildSpan(t, parent);
+		followChildSpan(t, newSpan.context());
 	}
 
 	public void followChildSpan(Tracer t, SpanContext parent) {
@@ -97,6 +98,7 @@ public class ReceiverResource {
 			spanBuilder = t.buildSpan("new_span_2");
 		} else {
 			spanBuilder = t.buildSpan("child_span_2").asChildOf(parent);
+//			spanBuilder = t.buildSpan("child_span_2").addReference(References.FOLLOWS_FROM, parent);
 		}
 
 		span2 = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT).start();
@@ -152,7 +154,7 @@ public class ReceiverResource {
 		if (parent == null) {
 			spanBuilder = t.buildSpan("new_span");
 		} else {
-			spanBuilder = t.buildSpan("follow_span_1").addReference(Tags.SPAN_KIND_SERVER, parent);
+			spanBuilder = t.buildSpan("follow_span_1").addReference(References.FOLLOWS_FROM, parent);
 		}
 
 		newSpan = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT).start();
