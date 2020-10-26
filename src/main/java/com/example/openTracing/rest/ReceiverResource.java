@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import lombok.Data;
 import okhttp3.MediaType;
 
 import com.example.openTracing.Consumer;
@@ -35,6 +34,8 @@ import javax.jms.Message;
 @RequestMapping("/api")
 public class ReceiverResource {
 
+	private int sleep_time = 1000;
+
 	@Autowired
 	private ApplicationContext ctx;
 
@@ -51,8 +52,8 @@ public class ReceiverResource {
 		s.finish();
 	}
 
-	@RequestMapping(value = "/apiTrace", method = RequestMethod.GET)
-	public void getApiTrace(@RequestHeader Map<String, String> headers) {
+	@RequestMapping(value = "/nestedApiTrace", method = RequestMethod.GET)
+	public void getNestedApiTrace(@RequestHeader Map<String, String> headers) {
 
 		Tracer t = GlobalTracer.get();
 
@@ -63,16 +64,108 @@ public class ReceiverResource {
 		Span newSpan = null;
 
 		if (parent == null) {
-			spanBuilder = t.buildSpan("new_span");
+			spanBuilder = t.buildSpan("new_span_1");
 		} else {
-			spanBuilder = t.buildSpan("extend_span").asChildOf(parent);
+			spanBuilder = t.buildSpan("child_span_1").asChildOf(parent);
 		}
 
-		newSpan = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER).start();
+		newSpan = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT).start();
 
 		t.scopeManager().activate(newSpan);
 
-		newSpan.setTag("more_baggage", "super_bags");
+		newSpan.setTag("time", sleep_time);
+
+		subSpan();
+
+		try {
+			Thread.sleep(sleep_time);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		newSpan.finish();
+
+		followChildSpan(t, parent);
+	}
+
+	public void followChildSpan(Tracer t, SpanContext parent) {
+		Tracer.SpanBuilder spanBuilder;
+
+		Span span2 = null;
+
+		if (parent == null) {
+			spanBuilder = t.buildSpan("new_span_2");
+		} else {
+			spanBuilder = t.buildSpan("child_span_2").asChildOf(parent);
+		}
+
+		span2 = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT).start();
+
+		t.scopeManager().activate(span2);
+
+		span2.setTag("time_2", sleep_time);
+
+		try {
+			Thread.sleep(sleep_time);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		span2.finish();
+	}
+
+	public void subSpan() {
+		Tracer t = GlobalTracer.get();
+
+		Tracer.SpanBuilder spanBuilder;
+
+		Span newSpan = null;
+
+		spanBuilder = t.buildSpan("sub_span");
+
+		newSpan = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT).start();
+
+		t.scopeManager().activate(newSpan);
+
+		int sleep_time = 420;
+		newSpan.setTag("blaze", sleep_time);
+
+		try {
+			Thread.sleep(sleep_time);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		newSpan.finish();
+	}
+
+	@RequestMapping(value = "/finishedApiTrace", method = RequestMethod.GET)
+	public void getFinshedApiTrace(@RequestHeader Map<String, String> headers) {
+
+		Tracer t = GlobalTracer.get();
+
+		Tracer.SpanBuilder spanBuilder;
+
+		SpanContext parent = t.extract(Builtin.HTTP_HEADERS, new TextMapAdapter(headers));
+
+		Span newSpan = null;
+		if (parent == null) {
+			spanBuilder = t.buildSpan("new_span");
+		} else {
+			spanBuilder = t.buildSpan("follow_span_1").addReference(Tags.SPAN_KIND_SERVER, parent);
+		}
+
+		newSpan = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT).start();
+
+		t.scopeManager().activate(newSpan);
+
+		newSpan.setTag("time", sleep_time);
+
+		try {
+			Thread.sleep(sleep_time);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
 		newSpan.finish();
 	}
