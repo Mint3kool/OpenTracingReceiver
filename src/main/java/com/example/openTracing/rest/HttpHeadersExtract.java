@@ -7,6 +7,13 @@ import java.util.Map.Entry;
 
 import io.opentracing.propagation.TextMap;
 
+/**
+ * Required method that performs the extract functionality expected from
+ * OpenTracing. In Java, the extract method simply maps to a TextMap object
+ * from the API call which contains the headers.
+ * @author tshen
+ *
+ */
 public class HttpHeadersExtract implements TextMap {
 	private final Map<String, String> map = new HashMap<>();
 
